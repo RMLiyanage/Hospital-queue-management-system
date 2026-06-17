@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import axios from 'axios';
 import './Register.css';
 
 function Register() {
@@ -56,22 +57,32 @@ function Register() {
     return true;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (validate()) {
-      // Simulate API registration request
-      setIsSuccess(true);
-      setErrors({});
-      // Reset form after a small delay
-      setTimeout(() => {
-        setFormData({
-          fullName: '',
-          email: '',
-          password: '',
-          confirmPassword: '',
+      try {
+        await axios.post("http://localhost:8080/api/auth/register", {
+          fullName: formData.fullName,
+          email: formData.email,
+          password: formData.password
         });
-        setIsSuccess(false);
-      }, 3000);
+        
+        alert("Registration successful!");
+        setIsSuccess(true);
+        // Reset form after a small delay
+        setTimeout(() => {
+          setFormData({
+            fullName: '',
+            email: '',
+            password: '',
+            confirmPassword: '',
+          });
+          setIsSuccess(false);
+        }, 3000);
+      } catch (error) {
+        const errorMsg = error.response?.data || "Registration failed. Please try again.";
+        alert(errorMsg);
+      }
     }
   };
 
