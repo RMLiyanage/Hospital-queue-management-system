@@ -28,32 +28,32 @@ function Register() {
   };
 
   const validate = () => {
-    const newErrors = {};
-
     if (!formData.fullName.trim()) {
-      newErrors.fullName = 'Full name is required';
+      alert("Full Name is required");
+      return false;
     }
 
     if (!formData.email.trim()) {
-      newErrors.email = 'Email address is required';
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Invalid email address';
+      alert("Email is required");
+      return false;
     }
 
     if (!formData.password) {
-      newErrors.password = 'Password is required';
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
+      alert("Password is required");
+      return false;
     }
 
-    if (!formData.confirmPassword) {
-      newErrors.confirmPassword = 'Confirm password is required';
-    } else if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
+    if (formData.password.length < 6) {
+      alert("Password must be at least 6 characters");
+      return false;
     }
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    if (formData.password !== formData.confirmPassword) {
+      alert("Passwords do not match");
+      return false;
+    }
+
+    return true;
   };
 
   const handleSubmit = (e) => {
