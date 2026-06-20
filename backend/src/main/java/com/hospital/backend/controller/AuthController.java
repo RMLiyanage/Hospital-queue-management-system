@@ -32,7 +32,12 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public String login(@RequestBody LoginRequest request) {
-        return "Login API Working";
+    public ResponseEntity<?> login(@RequestBody LoginRequest request) {
+        try {
+            User user = userService.loginUser(request);
+            return ResponseEntity.ok(user);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 }

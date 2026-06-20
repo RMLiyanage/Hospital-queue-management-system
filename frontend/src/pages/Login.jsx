@@ -57,11 +57,11 @@ function Login() {
           password: formData.password,
         });
 
-        if (response.data === 'Login API Working') {
+        if (response.data && response.data.email) {
           alert('Login successful!');
           setIsSuccess(true);
           
-          localStorage.setItem('user', JSON.stringify({ email: formData.email, token: 'mock-token' }));
+          localStorage.setItem('user', JSON.stringify(response.data));
 
           setTimeout(() => {
             setIsSuccess(false);
