@@ -57,18 +57,19 @@ function Login() {
           password: formData.password,
         });
 
-        alert('Login successful!');
-        setIsSuccess(true);
-        
-        // Storing basic user info in local storage (simulated login session)
-        localStorage.setItem('user', JSON.stringify(response.data));
+        if (response.data === 'Login API Working') {
+          alert('Login successful!');
+          setIsSuccess(true);
+          
+          localStorage.setItem('user', JSON.stringify({ email: formData.email, token: 'mock-token' }));
 
-        // Reset form after a small delay
-        setTimeout(() => {
-          setIsSuccess(false);
-          // Redirect to home/dashboard or just alert success
-          window.location.hash = '#dashboard';
-        }, 1500);
+          setTimeout(() => {
+            setIsSuccess(false);
+            window.location.hash = '#dashboard';
+          }, 1500);
+        } else {
+          throw new Error('Unexpected response from server');
+        }
 
       } catch (error) {
         const errorMsg = error.response?.data || 'Login failed. Please check your credentials.';
