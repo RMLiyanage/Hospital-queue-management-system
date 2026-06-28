@@ -28,4 +28,8 @@ public class Doctor {
 
     @Column(nullable = false)
     private String specialization;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean available = true;
 }

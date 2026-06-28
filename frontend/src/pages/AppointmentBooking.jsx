@@ -9,6 +9,7 @@ function AppointmentBooking() {
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [bookingSuccess, setBookingSuccess] = useState(null);
+  const [bookingError, setBookingError] = useState(null);
 
   useEffect(() => {
     // Authenticate routing
@@ -50,11 +51,29 @@ function AppointmentBooking() {
     window.location.hash = '#login';
   };
 
-  const handleBookAppointment = (doctorName) => {
-    setBookingSuccess(`Booking initiated with ${doctorName}!`);
-    setTimeout(() => {
-      setBookingSuccess(null);
-    }, 3000);
+  const handleBookAppointment = async (id, doctorName) => {
+    setBookingSuccess(null);
+    setBookingError(null);
+    try {
+      const response = await axios.get(`http://localhost:8080/api/doctors/${id}/availability`);
+      if (response.data && response.data.available) {
+        setBookingSuccess(`Booking initiated with ${doctorName}!`);
+        setTimeout(() => {
+          setBookingSuccess(null);
+        }, 4000);
+      } else {
+        setBookingError(`Doctor is unavailable today.`);
+        setTimeout(() => {
+          setBookingError(null);
+        }, 4000);
+      }
+    } catch (err) {
+      console.error(err);
+      setBookingError('Error checking availability. Please try again.');
+      setTimeout(() => {
+        setBookingError(null);
+      }, 4000);
+    }
   };
 
   const getSpecializationClass = (specialization) => {
@@ -129,6 +148,12 @@ function AppointmentBooking() {
           </div>
         )}
 
+        {bookingError && (
+          <div className="error-alert" id="booking-error-alert" style={{ marginBottom: '2rem' }}>
+            {bookingError}
+          </div>
+        )}
+
         {/* Search bar */}
         <section className="search-filter-section">
           <div className="search-input-wrapper">
@@ -188,7 +213,7 @@ function AppointmentBooking() {
                     </span>
                     <button
                       className="book-now-btn"
-                      onClick={() => handleBookAppointment(doctor.doctorName)}
+                      onClick={() => handleBookAppointment(doctor.id, doctor.doctorName)}
                       id={`book-doctor-btn-${doctor.id}`}
                     >
                       Book Appointment
