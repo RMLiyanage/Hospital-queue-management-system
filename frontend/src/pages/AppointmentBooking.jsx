@@ -2,6 +2,14 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './AppointmentBooking.css';
 
+const TIME_SLOTS = [
+  '09:00 AM', '09:30 AM', '10:00 AM', '10:30 AM',
+  '11:00 AM', '11:30 AM', '12:00 PM', '12:30 PM',
+  '01:00 PM', '01:30 PM', '02:00 PM', '02:30 PM',
+  '03:00 PM', '03:30 PM', '04:00 PM', '04:30 PM',
+  '05:00 PM',
+];
+
 function AppointmentBooking() {
   const [userName, setUserName] = useState('Patient');
   const [doctors, setDoctors] = useState([]);
@@ -11,8 +19,13 @@ function AppointmentBooking() {
   const [bookingSuccess, setBookingSuccess] = useState(null);
   const [bookingError, setBookingError] = useState(null);
 
+  // Date/time selection state
+  const [selectedDoctorId, setSelectedDoctorId] = useState(null);
+  const [selectedDate, setSelectedDate] = useState('');
+  const [selectedTime, setSelectedTime] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
+
   useEffect(() => {
-    // Authenticate routing
     const userStr = localStorage.getItem('user');
     if (userStr) {
       try {
@@ -51,28 +64,52 @@ function AppointmentBooking() {
     window.location.hash = '#login';
   };
 
-  const handleBookAppointment = async (id, doctorName) => {
+  const handleSelectDoctor = (id) => {
+    if (selectedDoctorId === id) {
+      setSelectedDoctorId(null);
+      setSelectedDate('');
+      setSelectedTime('');
+      setFieldErrors({});
+    } else {
+      setSelectedDoctorId(id);
+      setSelectedDate('');
+      setSelectedTime('');
+      setFieldErrors({});
+      setBookingSuccess(null);
+      setBookingError(null);
+    }
+  };
+
+  const handleConfirmBooking = async (id, doctorName) => {
+    const errors = {};
+    if (!selectedDate) errors.date = 'Please select a date.';
+    if (!selectedTime) errors.time = 'Please select a time slot.';
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      return;
+    }
+    setFieldErrors({});
     setBookingSuccess(null);
     setBookingError(null);
+
     try {
       const response = await axios.get(`http://localhost:8080/api/doctors/${id}/availability`);
       if (response.data && response.data.available) {
-        setBookingSuccess(`Booking initiated with ${doctorName}!`);
-        setTimeout(() => {
-          setBookingSuccess(null);
-        }, 4000);
+        setBookingSuccess(
+          `Appointment confirmed with ${doctorName} on ${selectedDate} at ${selectedTime}!`
+        );
+        setSelectedDoctorId(null);
+        setSelectedDate('');
+        setSelectedTime('');
+        setTimeout(() => setBookingSuccess(null), 5000);
       } else {
-        setBookingError(`Doctor is unavailable today.`);
-        setTimeout(() => {
-          setBookingError(null);
-        }, 4000);
+        setBookingError('Doctor is unavailable today.');
+        setTimeout(() => setBookingError(null), 4000);
       }
     } catch (err) {
       console.error(err);
       setBookingError('Error checking availability. Please try again.');
-      setTimeout(() => {
-        setBookingError(null);
-      }, 4000);
+      setTimeout(() => setBookingError(null), 4000);
     }
   };
 
@@ -86,7 +123,6 @@ function AppointmentBooking() {
   const getSpecializationIcon = (specialization) => {
     const spec = specialization?.toLowerCase() || '';
     if (spec.includes('cardio')) {
-      // Heart Icon
       return (
         <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
           <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
@@ -94,7 +130,6 @@ function AppointmentBooking() {
       );
     }
     if (spec.includes('dent')) {
-      // Tooth-like SVG (Shield/Deco representation)
       return (
         <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
           <path d="M12 2c-.5 0-1 .5-1 1v2c0 .5.5 1 1 1s1-.5 1-1V3c0-.5-.5-1-1-1Z"/>
@@ -102,7 +137,6 @@ function AppointmentBooking() {
         </svg>
       );
     }
-    // Stethoscope / Doctor shield
     return (
       <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
         <path d="M4.5 16.5c-1.5 1.26-2.5 3.19-2.5 5.5h20c0-2.31-1-4.24-2.5-5.5"/>
@@ -111,6 +145,8 @@ function AppointmentBooking() {
       </svg>
     );
   };
+
+  const todayStr = new Date().toISOString().split('T')[0];
 
   const filteredDoctors = doctors.filter((doctor) => {
     const query = searchQuery.toLowerCase();
@@ -123,12 +159,11 @@ function AppointmentBooking() {
   return (
     <div className="booking-container" id="booking-page-container">
       <div className="booking-content">
-        
-        {/* Navigation & Header */}
+
         <header className="booking-header" id="booking-header">
           <div className="brand-section">
             <h1>ApexCare Portal</h1>
-            <p>Queue & Appointment Management System</p>
+            <p>Queue &amp; Appointment Management System</p>
           </div>
           <div className="user-profile">
             <div className="user-info">
@@ -141,20 +176,17 @@ function AppointmentBooking() {
           </div>
         </header>
 
-        {/* Global notification */}
         {bookingSuccess && (
           <div className="success-alert" id="booking-success-alert" style={{ marginBottom: '2rem' }}>
             {bookingSuccess}
           </div>
         )}
-
         {bookingError && (
           <div className="error-alert" id="booking-error-alert" style={{ marginBottom: '2rem' }}>
             {bookingError}
           </div>
         )}
 
-        {/* Search bar */}
         <section className="search-filter-section">
           <div className="search-input-wrapper">
             <svg className="search-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -173,7 +205,6 @@ function AppointmentBooking() {
 
         <h2 className="doctors-section-title">Available Medical Experts</h2>
 
-        {/* Loading state */}
         {loading && (
           <div className="loading-wrapper" id="doctors-loading-state">
             <div className="spinner"></div>
@@ -181,7 +212,6 @@ function AppointmentBooking() {
           </div>
         )}
 
-        {/* Error state */}
         {!loading && error && (
           <div className="error-wrapper" id="doctors-error-state">
             <div className="error-icon">⚠️</div>
@@ -192,7 +222,6 @@ function AppointmentBooking() {
           </div>
         )}
 
-        {/* Doctor lists */}
         {!loading && !error && (
           <>
             {filteredDoctors.length === 0 ? (
@@ -202,24 +231,93 @@ function AppointmentBooking() {
               </div>
             ) : (
               <div className="doctors-grid" id="doctors-grid-container">
-                {filteredDoctors.map((doctor) => (
-                  <div className="doctor-card" key={doctor.id} id={`doctor-card-${doctor.id}`}>
-                    <div className="doctor-avatar-wrapper">
-                      {getSpecializationIcon(doctor.specialization)}
-                    </div>
-                    <h3 className="doctor-name">{doctor.doctorName}</h3>
-                    <span className={`specialization-badge ${getSpecializationClass(doctor.specialization)}`}>
-                      {doctor.specialization}
-                    </span>
-                    <button
-                      className="book-now-btn"
-                      onClick={() => handleBookAppointment(doctor.id, doctor.doctorName)}
-                      id={`book-doctor-btn-${doctor.id}`}
+                {filteredDoctors.map((doctor) => {
+                  const isExpanded = selectedDoctorId === doctor.id;
+                  return (
+                    <div
+                      className={`doctor-card${isExpanded ? ' doctor-card--expanded' : ''}`}
+                      key={doctor.id}
+                      id={`doctor-card-${doctor.id}`}
                     >
-                      Book Appointment
-                    </button>
-                  </div>
-                ))}
+                      <div className="doctor-avatar-wrapper">
+                        {getSpecializationIcon(doctor.specialization)}
+                      </div>
+                      <h3 className="doctor-name">{doctor.doctorName}</h3>
+                      <span className={`specialization-badge ${getSpecializationClass(doctor.specialization)}`}>
+                        {doctor.specialization}
+                      </span>
+
+                      <button
+                        className={`book-now-btn${isExpanded ? ' book-now-btn--active' : ''}`}
+                        onClick={() => handleSelectDoctor(doctor.id)}
+                        id={`book-doctor-btn-${doctor.id}`}
+                      >
+                        {isExpanded ? 'Cancel' : 'Book Appointment'}
+                      </button>
+
+                      {isExpanded && (
+                        <div className="date-time-panel" id={`date-time-panel-${doctor.id}`}>
+                          <div className="dt-divider"></div>
+
+                          <div className="dt-field-group">
+                            <label className="dt-label" htmlFor={`date-input-${doctor.id}`}>
+                              Select Date
+                            </label>
+                            <input
+                              type="date"
+                              id={`date-input-${doctor.id}`}
+                              className={`dt-input${fieldErrors.date ? ' dt-input--error' : ''}`}
+                              value={selectedDate}
+                              min={todayStr}
+                              onChange={(e) => {
+                                setSelectedDate(e.target.value);
+                                if (fieldErrors.date) setFieldErrors(prev => ({ ...prev, date: null }));
+                              }}
+                            />
+                            {fieldErrors.date && (
+                              <span className="field-error" id={`date-error-${doctor.id}`}>
+                                {fieldErrors.date}
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="dt-field-group">
+                            <label className="dt-label" htmlFor={`time-select-${doctor.id}`}>
+                              Select Time
+                            </label>
+                            <select
+                              id={`time-select-${doctor.id}`}
+                              className={`dt-select${fieldErrors.time ? ' dt-select--error' : ''}`}
+                              value={selectedTime}
+                              onChange={(e) => {
+                                setSelectedTime(e.target.value);
+                                if (fieldErrors.time) setFieldErrors(prev => ({ ...prev, time: null }));
+                              }}
+                            >
+                              <option value="">-- Choose a time slot --</option>
+                              {TIME_SLOTS.map((slot) => (
+                                <option key={slot} value={slot}>{slot}</option>
+                              ))}
+                            </select>
+                            {fieldErrors.time && (
+                              <span className="field-error" id={`time-error-${doctor.id}`}>
+                                {fieldErrors.time}
+                              </span>
+                            )}
+                          </div>
+
+                          <button
+                            className="confirm-btn"
+                            onClick={() => handleConfirmBooking(doctor.id, doctor.doctorName)}
+                            id={`confirm-booking-btn-${doctor.id}`}
+                          >
+                            Confirm Booking
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </>
