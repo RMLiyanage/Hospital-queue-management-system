@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './App.css';
 import Register from './components/Register';
 import Login from './pages/Login';
+import AppointmentBooking from './pages/AppointmentBooking';
 
 function App() {
   const [route, setRoute] = useState(window.location.hash || '#login');
@@ -25,6 +26,8 @@ function App() {
     <div className="App">
       {route === '#register' ? (
         <Register />
+      ) : route === '#booking' || route === '#dashboard' ? (
+        <AppointmentBooking />
       ) : (
         <Login />
       )}
